@@ -4,14 +4,12 @@ __pycache__/
 *.pyc
 .ipynb_checkpoints/
 
-# FVC2004 images: research licence, not redistributable. See NOTES.md for how to obtain.
+# FVC2004 Set B images are NOT in the repository (research licence).
+# Place them with: python scripts/prepare_data.py <folder with DB1_B.zip ... DB4_B.zip>
 data/
 
-# Large / third-party downloads
-nbis_v5_0_0.zip
-
-# Regenerated in ~30 s by src/run_baseline.py (mindtct output, 960 files)
-results/features/nbis_xyt/
+# NBIS built locally by scripts/build_nbis.sh (source: nbis_v5_0_0.zip, committed)
+tools/
 
 # Papers and report PDFs (Paik et al. is IEEE-copyrighted; the report lives in Overleaf)
 /*.pdf

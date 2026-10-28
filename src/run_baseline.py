@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import norm
 
-from config import FEATURES_DIR, RESULTS_DIR
+from config import FEATURES_DIR, RESULTS_DIR, nbis_available
 from dataset import load_samples
 from metrics import evaluate, pair_indices, roc, save_json
 from nbis_match import bozorth3_pairs, extract_all, minutiae_count
@@ -85,13 +85,23 @@ def main():
         "DeepPrint-minu256": cosine_scores(feats["minutia"], pairs),
     }
 
-    if not args.skip_nbis:
-        xyt_dir = RESULTS_DIR / "features" / "nbis_xyt"
-        xyts = extract_all([s.path for s in samples], [s.name for s in samples], xyt_dir)
-        counts = np.array([minutiae_count(x) for x in xyts])
-        print(f"mindtct: minutiae per image mean {counts.mean():.1f}, "
-              f"min {counts.min()}, max {counts.max()}")
+    xyt_dir = RESULTS_DIR / "features" / "nbis_xyt"
+    xyts = extract_all([s.path for s in samples], [s.name for s in samples], xyt_dir)
+    counts = np.array([minutiae_count(x) for x in xyts])
+    print(f"mindtct: minutiae per image mean {counts.mean():.1f}, "
+          f"min {counts.min()}, max {counts.max()}")
+    if not args.skip_nbis and nbis_available():
         scores["NBIS-Bozorth3"] = bozorth3_pairs(xyts, pairs).astype(float)
+    else:
+        # Without NBIS (or with --skip-nbis), keep the Bozorth3 scores already saved
+        # for these exact pairs instead of dropping them from the results.
+        saved = OUT / f"scores_{args.prep}.npz"
+        old = np.load(saved) if saved.is_file() else None
+        if old is not None and "NBIS-Bozorth3" in old and np.array_equal(old["pairs"], pairs):
+            scores["NBIS-Bozorth3"] = old["NBIS-Bozorth3"]
+            print(f"NBIS not run: reusing saved Bozorth3 scores from {saved}")
+        else:
+            print("NBIS not run and no saved Bozorth3 scores: NBIS rows omitted")
 
     OUT.mkdir(parents=True, exist_ok=True)
     results = {name: evaluate(s, genuine_mask, pairs, subj, dbs, imp)

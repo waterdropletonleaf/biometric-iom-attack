@@ -74,7 +74,7 @@ def save(fig, name, title, message, wide=False):
     <name>_wide.pdf; the caption is registered once, by the stacked layout."""
     FIG.mkdir(parents=True, exist_ok=True)
     stem = f"{name}_wide" if wide else name
-    fig.savefig(FIG / f"{stem}.pdf")
+    fig.savefig(FIG / f"{stem}.pdf", metadata={"CreationDate": None})  # reproducible bytes
     fig.savefig(FIG / f"{stem}.png", dpi=200)  # preview only
     plt.close(fig)
     if wide:

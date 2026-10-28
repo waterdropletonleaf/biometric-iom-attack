@@ -155,7 +155,7 @@ def fig_threshold(scores, genuine, ops):
                  y=0.995)
     fig.subplots_adjust(left=0.12, right=0.98, top=0.89, bottom=0.23, hspace=1.0, wspace=0.28)
     (UPLOAD / "figures").mkdir(parents=True, exist_ok=True)
-    fig.savefig(UPLOAD / "figures" / "s4_threshold.pdf")
+    fig.savefig(UPLOAD / "figures" / "s4_threshold.pdf", metadata={"CreationDate": None})
     fig.savefig(OUT / "s4_threshold.png", dpi=200)
     plt.close(fig)
 

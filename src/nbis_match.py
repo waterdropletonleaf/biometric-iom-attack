@@ -15,10 +15,11 @@ from PIL import Image
 from config import BOZORTH3, MINDTCT
 
 
-def _check_binaries():
-    for b in (MINDTCT, BOZORTH3):
+def _check_binaries(*binaries: Path):
+    for b in binaries or (MINDTCT, BOZORTH3):
         if not b.is_file():
-            raise FileNotFoundError(f"{b} not found; set NBIS_BIN to the NBIS bin directory")
+            raise FileNotFoundError(
+                f"{b} not found; build NBIS with scripts/build_nbis.sh or set NBIS_BIN")
 
 
 def extract_minutiae(image_path: Path, out_dir: Path, name: str) -> Path:
@@ -26,6 +27,7 @@ def extract_minutiae(image_path: Path, out_dir: Path, name: str) -> Path:
     xyt = out_dir / f"{name}.xyt"
     if xyt.is_file():
         return xyt
+    _check_binaries(MINDTCT)
     out_dir.mkdir(parents=True, exist_ok=True)
     png = out_dir / f"{name}.png"
     Image.open(image_path).convert("L").save(png, dpi=(500, 500))
@@ -38,13 +40,12 @@ def extract_minutiae(image_path: Path, out_dir: Path, name: str) -> Path:
 
 
 def extract_all(image_paths: list[Path], names: list[str], out_dir: Path) -> list[Path]:
-    _check_binaries()
     return [extract_minutiae(p, out_dir, n) for p, n in zip(image_paths, names)]
 
 
 def bozorth3_pairs(xyts: list[Path], pairs: np.ndarray) -> np.ndarray:
     """Bozorth3 score for each (probe, gallery) index pair, in one batch call."""
-    _check_binaries()
+    _check_binaries(BOZORTH3)
     with tempfile.TemporaryDirectory() as tmp:
         mates = Path(tmp) / "mates.lis"
         with mates.open("w") as f:

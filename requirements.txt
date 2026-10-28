@@ -1,8 +1,17 @@
-numpy
-scipy
-scikit-learn
-matplotlib
-jupyterlab
-torch
-torchvision
-torchaudio
+# Dependencies for every script in src/ (Python 3.12, CPU only).
+# Install: pip install -r requirements.txt
+# Exact versions of the full environment (incl. sub-dependencies): requirements-lock.txt
+numpy==2.5.3
+scipy==1.18.1
+scikit-learn==1.9.1
+pandas==3.0.6
+matplotlib==3.11.2
+pillow==12.3.0
+opencv-python==5.0.0.93
+torch==2.14.1
+torchvision==0.29.1
+torchmetrics==1.9.0
+tqdm==4.70.1
+
+# DeepPrint implementation (Rohwedder et al.), git submodule, installed as a local package
+-e ./fixed-length-fingerprint-extractors
