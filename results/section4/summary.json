@@ -1,0 +1,345 @@
+{
+  "operating_fmr": 0.01,
+  "operating_points": {
+    "DeepPrint (unprotected)": {
+      "EER": {
+        "threshold": 0.7047266960144043,
+        "fm": 3120,
+        "n_impostor": 49920,
+        "fmr": 0.0625,
+        "fnm": 70,
+        "n_genuine": 1120,
+        "fnmr": 0.0625
+      },
+      "FMR 1%": {
+        "threshold": 0.8408539295196533,
+        "fm": 499,
+        "n_impostor": 49920,
+        "fmr": 0.009995993589743589,
+        "fnm": 212,
+        "n_genuine": 1120,
+        "fnmr": 0.18928571428571428
+      },
+      "FMR 0.1%": {
+        "threshold": 0.9301478266716003,
+        "fm": 49,
+        "n_impostor": 49920,
+        "fmr": 0.0009815705128205128,
+        "fnm": 656,
+        "n_genuine": 1120,
+        "fnmr": 0.5857142857142857
+      }
+    },
+    "NBIS Bozorth3": {
+      "EER": {
+        "threshold": 11.0,
+        "fm": 4871,
+        "n_impostor": 49920,
+        "fmr": 0.0975761217948718,
+        "fnm": 93,
+        "n_genuine": 1120,
+        "fnmr": 0.08303571428571428
+      },
+      "FMR 1%": {
+        "threshold": 18.0,
+        "fm": 344,
+        "n_impostor": 49920,
+        "fmr": 0.006891025641025641,
+        "fnm": 175,
+        "n_genuine": 1120,
+        "fnmr": 0.15625
+      },
+      "FMR 0.1%": {
+        "threshold": 24.0,
+        "fm": 36,
+        "n_impostor": 49920,
+        "fmr": 0.0007211538461538462,
+        "fnm": 249,
+        "n_genuine": 1120,
+        "fnmr": 0.22232142857142856
+      }
+    },
+    "GRP-IoM (key 0)": {
+      "EER": {
+        "threshold": 111.0,
+        "fm": 3291,
+        "n_impostor": 49920,
+        "fmr": 0.06592548076923077,
+        "fnm": 73,
+        "n_genuine": 1120,
+        "fnmr": 0.06517857142857143
+      },
+      "FMR 1%": {
+        "threshold": 155.0,
+        "fm": 498,
+        "n_impostor": 49920,
+        "fmr": 0.009975961538461538,
+        "fnm": 233,
+        "n_genuine": 1120,
+        "fnmr": 0.2080357142857143
+      },
+      "FMR 0.1%": {
+        "threshold": 202.0,
+        "fm": 47,
+        "n_impostor": 49920,
+        "fmr": 0.0009415064102564103,
+        "fnm": 699,
+        "n_genuine": 1120,
+        "fnmr": 0.6241071428571429
+      }
+    },
+    "URP-IoM (key 0)": {
+      "EER": {
+        "threshold": 116.0,
+        "fm": 3017,
+        "n_impostor": 49920,
+        "fmr": 0.06043669871794872,
+        "fnm": 69,
+        "n_genuine": 1120,
+        "fnmr": 0.06160714285714286
+      },
+      "FMR 1%": {
+        "threshold": 198.0,
+        "fm": 490,
+        "n_impostor": 49920,
+        "fmr": 0.009815705128205128,
+        "fnm": 224,
+        "n_genuine": 1120,
+        "fnmr": 0.2
+      },
+      "FMR 0.1%": {
+        "threshold": 311.0,
+        "fm": 46,
+        "n_impostor": 49920,
+        "fmr": 0.000921474358974359,
+        "fnm": 691,
+        "n_genuine": 1120,
+        "fnmr": 0.6169642857142857
+      }
+    }
+  },
+  "error_analysis": {
+    "DeepPrint": {
+      "threshold": 0.8408539295196533,
+      "fnm_by_db": {
+        "DB1": [
+          58,
+          280
+        ],
+        "DB2": [
+          109,
+          280
+        ],
+        "DB3": [
+          3,
+          280
+        ],
+        "DB4": [
+          42,
+          280
+        ]
+      },
+      "fm_within_db": {
+        "DB1": [
+          211,
+          2880
+        ],
+        "DB2": [
+          2,
+          2880
+        ],
+        "DB3": [
+          157,
+          2880
+        ],
+        "DB4": [
+          36,
+          2880
+        ]
+      },
+      "fm_cross_db": [
+        93,
+        38400
+      ],
+      "fnm_by_worse_nfiq": {
+        "1": [
+          15,
+          214
+        ],
+        "2": [
+          83,
+          505
+        ],
+        "3": [
+          87,
+          328
+        ],
+        "4": [
+          4,
+          27
+        ],
+        "5": [
+          23,
+          46
+        ]
+      },
+      "fnm_with_outlier_image": [
+        48,
+        48
+      ],
+      "fnm_without_outlier": [
+        164,
+        1072
+      ],
+      "fingers_in_most_fm": [
+        [
+          "db3_101",
+          139
+        ],
+        [
+          "db3_102",
+          112
+        ],
+        [
+          "db1_108",
+          76
+        ]
+      ]
+    },
+    "NBIS": {
+      "threshold": 18.0,
+      "fnm_by_db": {
+        "DB1": [
+          57,
+          280
+        ],
+        "DB2": [
+          75,
+          280
+        ],
+        "DB3": [
+          20,
+          280
+        ],
+        "DB4": [
+          23,
+          280
+        ]
+      },
+      "fm_within_db": {
+        "DB1": [
+          38,
+          2880
+        ],
+        "DB2": [
+          41,
+          2880
+        ],
+        "DB3": [
+          45,
+          2880
+        ],
+        "DB4": [
+          49,
+          2880
+        ]
+      },
+      "fm_cross_db": [
+        171,
+        38400
+      ],
+      "fnm_by_worse_nfiq": {
+        "1": [
+          2,
+          214
+        ],
+        "2": [
+          51,
+          505
+        ],
+        "3": [
+          84,
+          328
+        ],
+        "4": [
+          7,
+          27
+        ],
+        "5": [
+          31,
+          46
+        ]
+      },
+      "fnm_with_outlier_image": [
+        34,
+        48
+      ],
+      "fnm_without_outlier": [
+        141,
+        1072
+      ],
+      "fingers_in_most_fm": [
+        [
+          "db2_108",
+          57
+        ],
+        [
+          "db1_103",
+          48
+        ],
+        [
+          "db2_104",
+          40
+        ]
+      ]
+    },
+    "fnm_overlap": {
+      "both": 93,
+      "DeepPrint_only": 119,
+      "NBIS_only": 82
+    },
+    "GRP-IoM": {
+      "threshold": 155.0,
+      "fnm_by_db": {
+        "DB1": 61,
+        "DB2": 112,
+        "DB3": 9,
+        "DB4": 51
+      },
+      "fnm_shared_with_deepprint": [
+        204,
+        233
+      ],
+      "fm_shared_with_deepprint": [
+        428,
+        498
+      ]
+    },
+    "URP-IoM": {
+      "threshold": 198.0,
+      "fnm_by_db": {
+        "DB1": 63,
+        "DB2": 111,
+        "DB3": 5,
+        "DB4": 45
+      },
+      "fnm_shared_with_deepprint": [
+        194,
+        224
+      ],
+      "fm_shared_with_deepprint": [
+        398,
+        490
+      ]
+    }
+  },
+  "seeds": {
+    "IoM shared (stolen-token) keys": "torch.Generator seeds 0-4 (key 0 = attack target)",
+    "IoM per-finger keys (genuine-token)": "10000 + subject id",
+    "IoM reissued keys (revocability)": "20000 + subject id",
+    "Unlinkability noise floor": "numpy default_rng(0), 20 repeats",
+    "EDA t-SNE / scatter jitter": "random_state=0 / default_rng(0)",
+    "DeepPrint inference": "deterministic (eval mode, no sampling); re-run is bit-identical",
+    "NBIS mindtct / Bozorth3": "deterministic"
+  }
+}

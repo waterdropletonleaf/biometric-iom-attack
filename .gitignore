@@ -1,0 +1,21 @@
+# Environment
+venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# FVC2004 images: research licence, not redistributable. See NOTES.md for how to obtain.
+data/
+
+# Large / third-party downloads
+nbis_v5_0_0.zip
+
+# Regenerated in ~30 s by src/run_baseline.py (mindtct output, 960 files)
+results/features/nbis_xyt/
+
+# Papers and report PDFs (Paik et al. is IEEE-copyrighted; the report lives in Overleaf)
+/*.pdf
+
+# Empty scratch folders
+logs/
+notebooks/

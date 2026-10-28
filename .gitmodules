@@ -1,0 +1,6 @@
+[submodule "Analysis_LSH"]
+	path = Analysis_LSH
+	url = https://github.com/Cryptology-Algorithm-Lab/Analysis_LSH.git
+[submodule "fixed-length-fingerprint-extractors"]
+	path = fixed-length-fingerprint-extractors
+	url = https://github.com/tim-rohwedder/fixed-length-fingerprint-extractors
