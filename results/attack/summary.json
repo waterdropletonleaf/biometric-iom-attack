@@ -1,0 +1,35 @@
+{
+  "grp": {
+    "scheme": "grp",
+    "params": {
+      "m": 300,
+      "q": 16
+    },
+    "n": 320,
+    "m": 300,
+    "matching_score_mean": 299.74375,
+    "exact_preimage_rate": 0.75,
+    "purity_mean": 0.8352827034890652,
+    "purity_std": 0.008407617802381183,
+    "time_mean_s": 0.010011631443768465,
+    "time_std_s": 0.004139799813687125,
+    "time_total_s": 3.203722062005909
+  },
+  "urp": {
+    "scheme": "urp",
+    "params": {
+      "m": 600,
+      "w": 100,
+      "p": 2
+    },
+    "n": 320,
+    "m": 600,
+    "matching_score_mean": 592.7,
+    "exact_preimage_rate": 0.6125,
+    "purity_mean": 0.8199180705938488,
+    "purity_std": 0.08069576840389348,
+    "time_mean_s": 2.0202949571093596,
+    "time_std_s": 1.6943977089738818,
+    "time_total_s": 646.4943862749951
+  }
+}

@@ -11,8 +11,8 @@ Working notes: how things are set up, why, and what to check when something brea
 | 1 | Setup: environment, FVC2004, NBIS | ✅ Done |
 | 2 | Unprotected baseline (DeepPrint, NBIS) | ✅ Done (2026-10-19) |
 | 3 | Implement & validate GRP/URP-IoM | ✅ Done (2026-10-19) |
-| 4–5 | Paik attack → pre-images (GRP, then URP) | ⏭️ Next |
-| 6–7 | Reconstruction + Type-1 / Type-2 evaluation | |
+| 4–5 | Paik attack → pre-images (GRP, then URP) | ✅ Done (2026-11-01) |
+| 6–7 | Reconstruction + Type-1 / Type-2 evaluation | ⏭️ Next |
 | 8 | Results & buffer → core complete | |
 | 9+ | Extensions + final report | |
 
@@ -219,6 +219,31 @@ Only pairs with i < j are scored, so each pair is compared once. (Bozorth3 isn't
   - URP's D↔sys sits a bit above its noise floor. Five fresh key draws gave a same-finger mean of 5.86–6.38 (both sides of 6) and D↔sys 0.018–0.047, so it's sampling noise from having only 40 independent key pairs.
 - **URP hashes ~40× slower than GRP** (0.62 vs 0.016 ms). That's hashing, not the attack, but it's a first data point for extension 1 (why URP takes longer to break).
 - **Ready for week 4:** reloading the saved templates and rebuilding keys from tokens, Paik's own `score()` agrees with ours, and Paik's `lsp()` evaluated at the true embedding is ≥ 0 everywhere. That means the true feature satisfies every argmax constraint the attack will search over.
+
+---
+
+## Week 4–5 results: PMA-LSH pre-image attack (`src/run_attack.py`, all 320 templates, key 0)
+
+| Scheme | Matching score | Exact pre-image | Purity (cos to true feature) | Time/template |
+|---|---|---|---|---|
+| GRP-IoM | 299.7 / 300 | 75.0% | 0.835 ± 0.008 | 0.010 ± 0.004 s |
+| URP-IoM | 592.7 / 600 | 61.3% | 0.820 ± 0.081 | 2.02 ± 1.69 s |
+
+- **The attack works on fingerprints.** Pre-images reproduce almost the whole stored hash and
+  reach purity ≈0.82–0.84, matching Paik's face results (~0.84). Context from the baseline:
+  genuine DeepPrint cosine 0.888, impostor 0.367 — so a pre-image lands far above impostor level
+  but just below a genuine second impression.
+- **URP is ~200× slower than GRP** (2.02 vs 0.010 s) with far larger variance (±1.69 s vs ±0.004).
+  GRP: linear constraints + smart init (mean loser→winner key direction). URP: product (p=2)
+  constraints, non-convex, random start, up to 10 restarts. This is the week-4 goal re: URP
+  convergence — restart counting is the next step to quantify it.
+- **URP sign ambiguity:** x and −x hash identically (p=2), so the script aligns each pre-image's
+  sign to the true feature before scoring purity (as Paik does). URP min purity 0.027 = a few
+  solves that satisfied the hash but not the direction (why URP's std is large).
+- **Outputs:** `results/attack/{summary.json, preimages_grp.npz, preimages_urp.npz}` (per-template
+  `preimages`, `scores`, `purity`, `times`, `subject`, `db`).
+- **Note:** `Newton` is copied verbatim into `run_attack.py` because importing it from
+  `Analysis_LSH/eval_attack.py` drags in `mxnet` (the face pipeline). The copy is torch-only.
 
 ---
 
