@@ -224,26 +224,43 @@ Only pairs with i < j are scored, so each pair is compared once. (Bozorth3 isn't
 
 ## Week 4–5 results: PMA-LSH pre-image attack (`src/run_attack.py`, all 320 templates, key 0)
 
-| Scheme | Matching score | Exact pre-image | Purity (cos to true feature) | Time/template |
-|---|---|---|---|---|
-| GRP-IoM | 299.7 / 300 | 75.0% | 0.835 ± 0.008 | 0.010 ± 0.004 s |
-| URP-IoM | 592.7 / 600 | 61.3% | 0.820 ± 0.081 | 2.02 ± 1.69 s |
+Seeded + single-threaded, so these reproduce exactly (`torch.manual_seed(0)`, `set_num_threads(1)`).
+
+| Variant | Matching score | Exact pre-image | Purity (cos to true) | Restarts (mean / max) | First-try | Time/template |
+|---|---|---|---|---|---|---|
+| GRP-IoM | 299.7 / 300 | 75.0% | 0.835 ± 0.008 | 0.00 / 0 | 100% | 0.010 s |
+| URP-IoM (random init) | 590.9 / 600 | 60.6% | 0.816 ± 0.101 | 2.62 / 11 | 25% | 1.50 s |
+| URP-IoM (smart init) | 591.6 / 600 | 62.2% | 0.814 ± 0.109 | 3.62 / 11 | 0% | 2.12 s |
 
 - **The attack works on fingerprints.** Pre-images reproduce almost the whole stored hash and
-  reach purity ≈0.82–0.84, matching Paik's face results (~0.84). Context from the baseline:
-  genuine DeepPrint cosine 0.888, impostor 0.367 — so a pre-image lands far above impostor level
-  but just below a genuine second impression.
-- **URP is ~200× slower than GRP** (2.02 vs 0.010 s) with far larger variance (±1.69 s vs ±0.004).
-  GRP: linear constraints + smart init (mean loser→winner key direction). URP: product (p=2)
-  constraints, non-convex, random start, up to 10 restarts. This is the week-4 goal re: URP
-  convergence — restart counting is the next step to quantify it.
+  reach purity ≈0.82–0.84, matching Paik's face results (~0.84). Baseline context: genuine
+  DeepPrint cosine 0.888, impostor 0.367 — a pre-image lands far above impostor level, just below
+  a genuine second impression.
+- **Goal 2 (why URP is slow), quantified.** GRP solves every template on the first try (its init
+  lands in the basin; linear constraints). URP needs **2.62 restarts on average** (max 11) and
+  solves first-try only **25%** of the time — the restart cost is what makes it ~150× slower than
+  GRP (1.50 vs 0.010 s).
+- **Smart URP init: tried, does not help (informative negative).** `urp_init` seeds the winning
+  coordinate pairs; the raw init already reproduces ~290/600 codes (vs ~7/600 for random), i.e. it
+  starts far closer. Yet it converges in one pass **0%** of the time and ends up with *more*
+  restarts (3.62 vs 2.62) and slower (2.12 vs 1.50 s). Conclusion: URP's restart cost is intrinsic
+  to its non-convex p=2 product landscape, not the starting point — a good starting hash-overlap
+  does not place you in the convergence basin. The GRP-style init idea does not transfer.
 - **URP sign ambiguity:** x and −x hash identically (p=2), so the script aligns each pre-image's
-  sign to the true feature before scoring purity (as Paik does). URP min purity 0.027 = a few
-  solves that satisfied the hash but not the direction (why URP's std is large).
-- **Outputs:** `results/attack/{summary.json, preimages_grp.npz, preimages_urp.npz}` (per-template
-  `preimages`, `scores`, `purity`, `times`, `subject`, `db`).
+  sign to the true feature before scoring purity (as Paik does). URP's larger purity std (±0.10)
+  comes from a few solves that satisfy the hash but land on the wrong direction.
+- **Reproducibility:** URP's random restarts + multi-threaded FP nondeterminism made it drift
+  run-to-run (purity 0.820→0.810 across two unseeded runs). `torch.manual_seed(0)` +
+  `torch.set_num_threads(1)` in `run_attack.py` make it bit-reproducible; GRP was already
+  deterministic. Re-running now reproduces `results/attack/*` exactly.
+- **Outputs:** `results/attack/{summary.json, preimages_grp.npz, preimages_urp.npz,
+  preimages_urp_smart.npz}` (per-template `preimages`, `scores`, `purity`, `times`, `restarts`,
+  `converged`, `subject`, `db`).
 - **Note:** `Newton` is copied verbatim into `run_attack.py` because importing it from
   `Analysis_LSH/eval_attack.py` drags in `mxnet` (the face pipeline). The copy is torch-only.
+
+Commands: `python src/run_attack.py --scheme both --urp-init none` then
+`python src/run_attack.py --scheme urp --urp-init smart`.
 
 ---
 

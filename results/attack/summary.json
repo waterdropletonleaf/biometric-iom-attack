@@ -1,22 +1,29 @@
 {
   "grp": {
     "scheme": "grp",
+    "variant": "grp",
     "params": {
       "m": 300,
       "q": 16
     },
     "n": 320,
     "m": 300,
+    "urp_init": null,
     "matching_score_mean": 299.74375,
     "exact_preimage_rate": 0.75,
     "purity_mean": 0.8352827034890652,
     "purity_std": 0.008407617802381183,
-    "time_mean_s": 0.010011631443768465,
-    "time_std_s": 0.004139799813687125,
-    "time_total_s": 3.203722062005909
+    "time_mean_s": 0.00996762747816433,
+    "time_std_s": 0.0041253742138887715,
+    "time_total_s": 3.189640793012586,
+    "restarts_mean": 0.0,
+    "restarts_max": 0,
+    "solved_first_try_rate": 1.0,
+    "converged_rate": 1.0
   },
   "urp": {
     "scheme": "urp",
+    "variant": "urp",
     "params": {
       "m": 600,
       "w": 100,
@@ -24,12 +31,40 @@
     },
     "n": 320,
     "m": 600,
-    "matching_score_mean": 592.7,
-    "exact_preimage_rate": 0.6125,
-    "purity_mean": 0.8199180705938488,
-    "purity_std": 0.08069576840389348,
-    "time_mean_s": 2.0202949571093596,
-    "time_std_s": 1.6943977089738818,
-    "time_total_s": 646.4943862749951
+    "urp_init": "none",
+    "matching_score_mean": 590.9,
+    "exact_preimage_rate": 0.603125,
+    "purity_mean": 0.8157135843313881,
+    "purity_std": 0.1008523692286706,
+    "time_mean_s": 1.5025505294812092,
+    "time_std_s": 1.2353990525650655,
+    "time_total_s": 480.81616943398694,
+    "restarts_mean": 2.61875,
+    "restarts_max": 11,
+    "solved_first_try_rate": 0.253125,
+    "converged_rate": 1.0
+  },
+  "urp_smart": {
+    "scheme": "urp",
+    "variant": "urp_smart",
+    "params": {
+      "m": 600,
+      "w": 100,
+      "p": 2
+    },
+    "n": 320,
+    "m": 600,
+    "urp_init": "smart",
+    "matching_score_mean": 591.55625,
+    "exact_preimage_rate": 0.596875,
+    "purity_mean": 0.8142059802252334,
+    "purity_std": 0.10852363175651356,
+    "time_mean_s": 2.1178533451156114,
+    "time_std_s": 1.2077969766540506,
+    "time_total_s": 677.7130704369956,
+    "restarts_mean": 3.61875,
+    "restarts_max": 11,
+    "solved_first_try_rate": 0.0,
+    "converged_rate": 1.0
   }
 }
