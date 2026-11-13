@@ -279,6 +279,35 @@ can already report two ASRs vs the Checkpoint-1 thresholds:
   feature-only attack and motivates reconstruction (re-extraction may push past the threshold).
 - Thresholds from `results/section4/summary.json`; baseline genuine/impostor from
   `results/baseline/scores_flx.npz` (same unprotected DeepPrint matcher).
+
+### Reconstruction: feature → image (`src/run_reconstruct.py`, weeks 6–7)
+
+No public DeepPrint decoder exists and training one needs a GPU + a separate corpus, so
+reconstruction is **optimisation-based feature inversion**: optimise a 299×299 image so the
+frozen DeepPrint re-extracts the recovered pre-image feature. The eval forward is wrapped in
+`torch.no_grad()`, so `diff_forward` calls the submodules directly (eval mode kept) to get
+gradients to the input. Adam, cosine loss + small TV prior, seeded. CPU ≈ 1 min/image.
+
+GRP, 24-image subset, 200 iters: reconstructions re-extract to **cos 0.860 to the true feature**.
+
+| | Image-level ASR | vs baseline |
+|---|---|---|
+| Type-1 (same protected system, FMR1%) | **100%** (24/24) | — |
+| Type-2 (unprotected) @EER | 69.6% | genuine 94% / impostor 6% |
+| Type-2 (unprotected) @FMR1% | 18.5% | genuine 81% / impostor 1% |
+
+- **The full chain works end-to-end:** template+key → pre-image → reconstructed **image** →
+  re-extract → it matches the stored IoM template (Type-1 100%) and partially impersonates the
+  victim on the unprotected matcher (Type-2 far above impostor level).
+- **Re-extraction regularises:** Type-2 @FMR1% *rose* from ~0% (feature-level) to 18.5% after
+  reconstruction — re-extracting the image projects the recovered feature back onto DeepPrint's
+  manifold, landing closer to the victim's identity.
+- **Honest limitation:** the images are **ridge-texture, not realistic prints** (no generative
+  prior), so they defeat the DeepPrint feature matcher but would **not** transfer to NBIS
+  (needs real minutiae) or pass visual/liveness inspection. A trained generative decoder
+  (GPU + corpus) is the remaining step for realistic reconstructions — see `montage_grp.png`.
+- **Outputs:** `results/reconstruct/{recon_grp.npz, recon_grp.json, montage_grp.png}`. Scale with
+  `--limit`/`--iters`; 24 images chosen for CPU time, not a limit of the method.
 - **Outputs:** `results/attack/{summary.json, preimages_grp.npz, preimages_urp.npz,
   preimages_urp_smart.npz}` (per-template `preimages`, `scores`, `purity`, `times`, `restarts`,
   `converged`, `subject`, `db`).

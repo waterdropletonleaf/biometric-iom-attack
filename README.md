@@ -65,6 +65,7 @@ Run from the project root, in this order (about 2 minutes in total):
 | Threshold and error analysis | [`src/run_section4.py`](src/run_section4.py) | Rates with counts, FMR/FNMR curves, operating point, failure breakdown | Sec. IV, Tables I–II, Fig. 6 |
 | Pre-image attack | [`src/run_attack.py`](src/run_attack.py) | PMA-LSH attack on the IoM templates; purity, matching score, restart analysis, smart-init experiment (seeded, single-thread) | Sec. II, IV |
 | Attack success | [`src/run_attack_eval.py`](src/run_attack_eval.py) | Feature-level Type-1/Type-2 ASR with counts vs the baseline thresholds; `det_attack.png` | Sec. IV |
+| Reconstruction | [`src/run_reconstruct.py`](src/run_reconstruct.py) | Optimisation-based feature inversion → fingerprint image; image-level Type-1/Type-2 ASR; `montage_grp.png` | Sec. IV |
 
 ```bash
 python src/extract_deepprint.py
@@ -74,6 +75,7 @@ python src/eda.py
 python src/run_section4.py
 python src/run_attack.py --scheme both --urp-init none   # then: --scheme urp --urp-init smart
 python src/run_attack_eval.py
+python src/run_reconstruct.py --scheme grp --limit 24   # CPU ~25 min
 ```
 
 **No training step.** The baseline is a *pretrained* CNN (DeepPrint, trained by Rohwedder et al.
