@@ -63,6 +63,8 @@ Run from the project root, in this order (about 2 minutes in total):
 | Protected systems | [`src/run_iom.py`](src/run_iom.py) | GRP-/URP-IoM hashing (Paik et al.'s code); accuracy, revocability, unlinkability; saves attack targets | Sec. IV |
 | EDA | [`src/eda.py`](src/eda.py) | Image quality and statistics, correlations, score distributions, class balance | Sec. III, Figs. 1–5 |
 | Threshold and error analysis | [`src/run_section4.py`](src/run_section4.py) | Rates with counts, FMR/FNMR curves, operating point, failure breakdown | Sec. IV, Tables I–II, Fig. 6 |
+| Pre-image attack | [`src/run_attack.py`](src/run_attack.py) | PMA-LSH attack on the IoM templates; purity, matching score, restart analysis, smart-init experiment (seeded, single-thread) | Sec. II, IV |
+| Attack success | [`src/run_attack_eval.py`](src/run_attack_eval.py) | Feature-level Type-1/Type-2 ASR with counts vs the baseline thresholds; `det_attack.png` | Sec. IV |
 
 ```bash
 python src/extract_deepprint.py
@@ -70,6 +72,8 @@ python src/run_baseline.py
 python src/run_iom.py
 python src/eda.py
 python src/run_section4.py
+python src/run_attack.py --scheme both --urp-init none   # then: --scheme urp --urp-init smart
+python src/run_attack_eval.py
 ```
 
 **No training step.** The baseline is a *pretrained* CNN (DeepPrint, trained by Rohwedder et al.

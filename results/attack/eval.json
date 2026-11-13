@@ -1,0 +1,152 @@
+{
+  "grp": {
+    "label": "GRP-IoM",
+    "type1_same_system": {
+      "EER": {
+        "threshold": 111,
+        "accepted": 320,
+        "n": 320,
+        "asr": 1.0
+      },
+      "FMR 1%": {
+        "threshold": 155,
+        "accepted": 320,
+        "n": 320,
+        "asr": 1.0
+      },
+      "FMR 0.1%": {
+        "threshold": 202,
+        "accepted": 320,
+        "n": 320,
+        "asr": 1.0
+      }
+    },
+    "type2_unprotected": {
+      "EER": {
+        "threshold": 0.7047266960144043,
+        "accepted": 1763,
+        "n": 2240,
+        "attack_asr": 0.7870535714285715,
+        "baseline_genuine_tar": 0.9375,
+        "baseline_impostor_accept": 0.0625
+      },
+      "FMR 1%": {
+        "threshold": 0.8408539295196533,
+        "accepted": 0,
+        "n": 2240,
+        "attack_asr": 0.0,
+        "baseline_genuine_tar": 0.8107142857142857,
+        "baseline_impostor_accept": 0.009995993589743589
+      },
+      "FMR 0.1%": {
+        "threshold": 0.9301478266716003,
+        "accepted": 0,
+        "n": 2240,
+        "attack_asr": 0.0,
+        "baseline_genuine_tar": 0.4142857142857143,
+        "baseline_impostor_accept": 0.0009815705128205128
+      }
+    },
+    "type2_score_mean": 0.7401401996612549
+  },
+  "urp": {
+    "label": "URP-IoM (random init)",
+    "type1_same_system": {
+      "EER": {
+        "threshold": 116,
+        "accepted": 318,
+        "n": 320,
+        "asr": 0.99375
+      },
+      "FMR 1%": {
+        "threshold": 198,
+        "accepted": 318,
+        "n": 320,
+        "asr": 0.99375
+      },
+      "FMR 0.1%": {
+        "threshold": 311,
+        "accepted": 315,
+        "n": 320,
+        "asr": 0.984375
+      }
+    },
+    "type2_unprotected": {
+      "EER": {
+        "threshold": 0.7047266960144043,
+        "accepted": 1718,
+        "n": 2240,
+        "attack_asr": 0.7669642857142858,
+        "baseline_genuine_tar": 0.9375,
+        "baseline_impostor_accept": 0.0625
+      },
+      "FMR 1%": {
+        "threshold": 0.8408539295196533,
+        "accepted": 6,
+        "n": 2240,
+        "attack_asr": 0.0026785714285714286,
+        "baseline_genuine_tar": 0.8107142857142857,
+        "baseline_impostor_accept": 0.009995993589743589
+      },
+      "FMR 0.1%": {
+        "threshold": 0.9301478266716003,
+        "accepted": 0,
+        "n": 2240,
+        "attack_asr": 0.0,
+        "baseline_genuine_tar": 0.4142857142857143,
+        "baseline_impostor_accept": 0.0009815705128205128
+      }
+    },
+    "type2_score_mean": 0.7267632484436035
+  },
+  "urp_smart": {
+    "label": "URP-IoM (smart init)",
+    "type1_same_system": {
+      "EER": {
+        "threshold": 116,
+        "accepted": 320,
+        "n": 320,
+        "asr": 1.0
+      },
+      "FMR 1%": {
+        "threshold": 198,
+        "accepted": 319,
+        "n": 320,
+        "asr": 0.996875
+      },
+      "FMR 0.1%": {
+        "threshold": 311,
+        "accepted": 314,
+        "n": 320,
+        "asr": 0.98125
+      }
+    },
+    "type2_unprotected": {
+      "EER": {
+        "threshold": 0.7047266960144043,
+        "accepted": 1717,
+        "n": 2240,
+        "attack_asr": 0.7665178571428571,
+        "baseline_genuine_tar": 0.9375,
+        "baseline_impostor_accept": 0.0625
+      },
+      "FMR 1%": {
+        "threshold": 0.8408539295196533,
+        "accepted": 6,
+        "n": 2240,
+        "attack_asr": 0.0026785714285714286,
+        "baseline_genuine_tar": 0.8107142857142857,
+        "baseline_impostor_accept": 0.009995993589743589
+      },
+      "FMR 0.1%": {
+        "threshold": 0.9301478266716003,
+        "accepted": 0,
+        "n": 2240,
+        "attack_asr": 0.0,
+        "baseline_genuine_tar": 0.4142857142857143,
+        "baseline_impostor_accept": 0.0009815705128205128
+      }
+    },
+    "type2_score_mean": 0.7252970933914185
+  }
+}

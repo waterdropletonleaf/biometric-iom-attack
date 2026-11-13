@@ -253,6 +253,32 @@ Seeded + single-threaded, so these reproduce exactly (`torch.manual_seed(0)`, `s
   run-to-run (purity 0.820→0.810 across two unseeded runs). `torch.manual_seed(0)` +
   `torch.set_num_threads(1)` in `run_attack.py` make it bit-reproducible; GRP was already
   deterministic. Re-running now reproduces `results/attack/*` exactly.
+
+### Feature-level attack success (`src/run_attack_eval.py`, `results/attack/eval.json`, `det_attack.png`)
+
+No reconstructor is public (Wijewardena et al. released no code; no off-the-shelf DeepPrint
+inverter), so image reconstruction + image Type-1/-2 is future work. At the **feature level** we
+can already report two ASRs vs the Checkpoint-1 thresholds:
+
+| | Type-1 (same protected system) | Type-2 (unprotected impersonation) |
+|---|---|---|
+| what | hash(pre-image) vs stored IoM template ≥ IoM thr | cos(pre-image, victim's *other* impressions) ≥ unprot thr |
+| GRP @EER | **100%** (320/320) | 78.7% (1763/2240) vs genuine 94% / impostor 6% |
+| GRP @FMR1% | 100% (320/320) | **0.0%** (0/2240) vs genuine 81% / impostor 1% |
+| URP @EER | 99.4% (318/320) | 76.7% vs genuine 94% / impostor 6% |
+| URP @FMR1% | 99.4% | 0.3% (6/2240) vs genuine 81% / impostor 1% |
+
+- **Type-1 ≈ 100%:** the pre-image reproduces the stored hash, so a feature-level replay breaks
+  IoM outright at any threshold. (Near-tautological — the solver targets that template — but
+  reported with counts.)
+- **Type-2 is threshold-dependent and this is the real finding.** The recovered feature's purity
+  (~0.835) sits right at the unprotected FMR-1% operating threshold (0.841): at EER it
+  impersonates the victim's *other* impressions ~77% of the time (close to genuine 94%), but at
+  the strict FMR-1% point it drops to ~0%. The attack pushes the feature far above impostor level
+  but lands on the decision boundary — see `det_attack.png`. This quantifies the limit of the
+  feature-only attack and motivates reconstruction (re-extraction may push past the threshold).
+- Thresholds from `results/section4/summary.json`; baseline genuine/impostor from
+  `results/baseline/scores_flx.npz` (same unprotected DeepPrint matcher).
 - **Outputs:** `results/attack/{summary.json, preimages_grp.npz, preimages_urp.npz,
   preimages_urp_smart.npz}` (per-template `preimages`, `scores`, `purity`, `times`, `restarts`,
   `converged`, `subject`, `db`).
