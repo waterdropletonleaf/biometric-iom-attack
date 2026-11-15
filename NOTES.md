@@ -288,13 +288,16 @@ frozen DeepPrint re-extracts the recovered pre-image feature. The eval forward i
 `torch.no_grad()`, so `diff_forward` calls the submodules directly (eval mode kept) to get
 gradients to the input. Adam, cosine loss + small TV prior, seeded. CPU ≈ 1 min/image.
 
-GRP, 24-image subset, 200 iters: reconstructions re-extract to **cos 0.860 to the true feature**.
+GRP, 24 images balanced across the four DBs (`--balanced`, 6/DB), 200 iters: reconstructions
+re-extract to **cos 0.838 to the true feature**.
 
 | | Image-level ASR | vs baseline |
 |---|---|---|
-| Type-1 (same protected system, FMR1%) | **100%** (24/24) | — |
-| Type-2 (unprotected) @EER | 69.6% | genuine 94% / impostor 6% |
-| Type-2 (unprotected) @FMR1% | 18.5% | genuine 81% / impostor 1% |
+| Type-1 (same protected system, FMR1%) | **91.7%** (22/24) | — |
+| Type-2 (unprotected) @EER | 61.3% | genuine 94% / impostor 6% |
+| Type-2 (unprotected) @FMR1% | 16.1% | genuine 81% / impostor 1% |
+
+(An earlier DB1-only subset gave 100% / 0.860; the DB-balanced subset is the representative number.)
 
 - **The full chain works end-to-end:** template+key → pre-image → reconstructed **image** →
   re-extract → it matches the stored IoM template (Type-1 100%) and partially impersonates the
@@ -308,6 +311,22 @@ GRP, 24-image subset, 200 iters: reconstructions re-extract to **cos 0.860 to th
   (GPU + corpus) is the remaining step for realistic reconstructions — see `montage_grp.png`.
 - **Outputs:** `results/reconstruct/{recon_grp.npz, recon_grp.json, montage_grp.png}`. Scale with
   `--limit`/`--iters`; 24 images chosen for CPU time, not a limit of the method.
+
+### Error analysis (`src/run_error_analysis.py`, `results/attack/error_analysis.json`, `purity_by_scheme.png`)
+
+1. **URP catastrophic failures (5 of 320).** Templates `db1_108_1, db2_102_7, db3_110_4,
+   db4_101_4, db4_110_5` recover a feature almost orthogonal to the true one (purity
+   0.002–0.14). All used the **maximum 11 restarts** and ended with **low match scores**
+   (12–276/600), i.e. genuine non-convergence — the solver neither satisfied the hash nor found
+   the true direction. **GRP on the identical templates succeeds** (purity 0.82–0.83), so the
+   cause is URP's non-convex p=2 product landscape, not the fingerprint. One per DB, so it is not
+   sensor-specific either.
+2. **GRP is robust to image quality.** Purity is near-constant across DBs (0.834–0.836) and
+   uncorrelated with NFIQ (−0.10) or own-finger similarity (0.08), and equal on the 7 EDA
+   outliers. The attack works on the feature, so Checkpoint-1 image weaknesses (DB1 small prints,
+   DB2 low quality) do **not** transfer to attack success — an attack-vs-recognition contrast.
+3. **Reconstruction failures** are the lowest-fidelity inversions (cos_true down to 0.76), which
+   give lower Type-1 scores — the 2 image-level Type-1 misses (22/24) are these.
 - **Outputs:** `results/attack/{summary.json, preimages_grp.npz, preimages_urp.npz,
   preimages_urp_smart.npz}` (per-template `preimages`, `scores`, `purity`, `times`, `restarts`,
   `converged`, `subject`, `db`).

@@ -1,0 +1,111 @@
+{
+  "urp_catastrophic_failures": {
+    "count": 5,
+    "criterion": "URP purity < 0.5",
+    "cases": [
+      {
+        "name": "db1_108_1",
+        "db": "DB1",
+        "urp_purity": 0.005,
+        "urp_match_score": 12,
+        "m": 600,
+        "urp_restarts": 11,
+        "grp_purity_same_template": 0.833
+      },
+      {
+        "name": "db2_102_7",
+        "db": "DB2",
+        "urp_purity": 0.04,
+        "urp_match_score": 273,
+        "m": 600,
+        "urp_restarts": 11,
+        "grp_purity_same_template": 0.829
+      },
+      {
+        "name": "db3_110_4",
+        "db": "DB3",
+        "urp_purity": 0.002,
+        "urp_match_score": 276,
+        "m": 600,
+        "urp_restarts": 11,
+        "grp_purity_same_template": 0.82
+      },
+      {
+        "name": "db4_101_4",
+        "db": "DB4",
+        "urp_purity": 0.035,
+        "urp_match_score": 267,
+        "m": 600,
+        "urp_restarts": 11,
+        "grp_purity_same_template": 0.825
+      },
+      {
+        "name": "db4_110_5",
+        "db": "DB4",
+        "urp_purity": 0.136,
+        "urp_match_score": 61,
+        "m": 600,
+        "urp_restarts": 11,
+        "grp_purity_same_template": 0.831
+      }
+    ],
+    "hypothesis": "URP's p=2 product constraints are non-convex; for these key/feature combinations the solver exhausts all restarts (max 11) in a bad basin, satisfying neither the hash (score << 600) nor the true direction (purity ~0). GRP succeeds on the same templates (purity ~0.83), so the cause is URP's landscape, not the fingerprint."
+  },
+  "robustness": {
+    "grp_purity_by_db": {
+      "DB1": 0.836,
+      "DB2": 0.834,
+      "DB3": 0.836,
+      "DB4": 0.836
+    },
+    "urp_purity_by_db": {
+      "DB1": 0.823,
+      "DB2": 0.816,
+      "DB3": 0.815,
+      "DB4": 0.809
+    },
+    "corr_grp_purity_vs_nfiq": -0.103,
+    "corr_grp_purity_vs_ownsim": 0.081,
+    "grp_purity_on_eda_outliers": 0.83,
+    "grp_purity_on_rest": 0.835,
+    "note": "GRP purity is near-constant across DBs and uncorrelated with image quality (|corr| < 0.11) and with the 7 EDA outliers: the attack operates on the feature, not the image, so Checkpoint-1 image-quality weaknesses (DB1 small prints, DB2 low quality) do NOT carry over to attack success."
+  },
+  "reconstruction": {
+    "n": 24,
+    "dbs_covered": [
+      "DB1",
+      "DB2",
+      "DB3",
+      "DB4"
+    ],
+    "cos_true_mean": 0.838,
+    "cos_true_min": 0.761,
+    "worst_cases": [
+      {
+        "index": 22,
+        "cos_true": 0.761,
+        "type1_score": 152,
+        "m": 300
+      },
+      {
+        "index": 18,
+        "cos_true": 0.775,
+        "type1_score": 166,
+        "m": 300
+      },
+      {
+        "index": 23,
+        "cos_true": 0.779,
+        "type1_score": 156,
+        "m": 300
+      },
+      {
+        "index": 21,
+        "cos_true": 0.789,
+        "type1_score": 154,
+        "m": 300
+      }
+    ],
+    "note": "Worst reconstructions still re-extract to cos >= 0.82. Lower-fidelity reconstructions give lower Type-1 scores, as expected."
+  }
+}

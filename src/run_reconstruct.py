@@ -73,6 +73,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--scheme", choices=["grp", "urp"], default="grp")
     ap.add_argument("--limit", type=int, default=24, help="images to reconstruct (even; batched x2)")
+    ap.add_argument("--balanced", action="store_true",
+                    help="spread the selection evenly across the four DBs (else first N)")
     ap.add_argument("--iters", type=int, default=250)
     ap.add_argument("--lr", type=float, default=0.05)
     ap.add_argument("--tv", type=float, default=0.01)
@@ -91,9 +93,18 @@ def main():
 
     n = min(args.limit, len(targets_all))
     n -= n % 2
+    if args.balanced:
+        db = pre["db"]
+        per = n // 4
+        idx = np.concatenate([np.where(db == d)[0][:per] for d in range(4)])
+    else:
+        idx = np.arange(n)
+    n = len(idx)
+    targets = targets_all[idx]
+
     recon = []
     for b in range(0, n, 2):
-        recon.append(reconstruct(model, targets_all[b:b + 2], args.iters, args.lr, args.tv))
+        recon.append(reconstruct(model, targets[b:b + 2], args.iters, args.lr, args.tv))
         print(f"  reconstructed {b + 2}/{n}", flush=True)
     recon = torch.cat(recon)
 
@@ -101,19 +112,20 @@ def main():
     with torch.no_grad():
         re = torch.cat([diff_forward(model, recon[b:b + 2]) for b in range(0, n, 2)])
 
-    cos_recovered = F.cosine_similarity(re, targets_all[:n]).numpy()
-    cos_true = F.cosine_similarity(re, feats[:n]).numpy()
+    cos_recovered = F.cosine_similarity(re, targets).numpy()
+    cos_true = F.cosine_similarity(re, feats[idx]).numpy()
 
     # Type-1 (image-level): hash re-extracted feature, score vs stored template
-    t1_scores = np.array([int((scheme.hashing(re[i:i + 1], key)[0] == codes[i:i + 1]).sum())
-                          for i in range(n)])
+    t1_scores = np.array([int((scheme.hashing(re[k:k + 1], key)[0] == codes[idx[k]:idx[k] + 1]).sum())
+                          for k in range(n)])
     t1_thr = IOM_FMR1[args.scheme]
 
     # Type-2 (image-level, unprotected): re-extracted feature vs OTHER impressions
     t2 = []
-    for i in range(n):
+    for k in range(n):
+        i = idx[k]
         others = np.where((subj_all == subj_all[i]) & (np.arange(len(subj_all)) != i))[0]
-        t2.append(F.cosine_similarity(re[i:i + 1], feats[others]).numpy())
+        t2.append(F.cosine_similarity(re[k:k + 1], feats[others]).numpy())
     t2 = np.concatenate(t2)
 
     base = np.load(RESULTS_DIR / "baseline" / "scores_flx.npz")
@@ -133,10 +145,12 @@ def main():
         res["baseline"][pt] = {"genuine_tar": float((dp[g] >= thr).mean()),
                                "impostor_accept": float((dp[~g] >= thr).mean())}
 
+    res["n"] = n
+    res["dbs_covered"] = sorted({int(pre["db"][i]) + 1 for i in idx})
     OUT.mkdir(parents=True, exist_ok=True)
     np.savez(OUT / f"recon_{args.scheme}.npz", images=recon.numpy(),
              cos_recovered=cos_recovered, cos_true=cos_true, type1=t1_scores,
-             subject=subj_all[:n])
+             subject=subj_all[idx], index=idx)
     (OUT / f"recon_{args.scheme}.json").write_text(json.dumps(res, indent=2))
 
     # Montage: a few reconstructions next to a real impression of the same finger
@@ -145,10 +159,12 @@ def main():
     import cv2
     from dataset import load_samples
     samples = load_samples()
-    for c in range(k):
-        axes[0, c].imshow(recon[c, 0].numpy(), cmap="gray"); axes[0, c].set_title(
-            f"recon\ncos→true {cos_true[c]:.2f}", fontsize=7)
-        img = cv2.imread(str(samples[c].path), cv2.IMREAD_GRAYSCALE)
+    # space the montage across the selection so it shows different DBs
+    show = np.linspace(0, n - 1, k).astype(int)
+    for c, sidx in enumerate(show):
+        axes[0, c].imshow(recon[sidx, 0].numpy(), cmap="gray"); axes[0, c].set_title(
+            f"recon {samples[idx[sidx]].name}\ncos→true {cos_true[sidx]:.2f}", fontsize=6.5)
+        img = cv2.imread(str(samples[idx[sidx]].path), cv2.IMREAD_GRAYSCALE)
         axes[1, c].imshow(img, cmap="gray"); axes[1, c].set_title("real impression", fontsize=7)
         for r in (0, 1):
             axes[r, c].set_xticks([]); axes[r, c].set_yticks([])

@@ -2,26 +2,26 @@
   "scheme": "grp",
   "n": 24,
   "iters": 200,
-  "recon_cos_to_recovered_mean": 0.7722589373588562,
-  "recon_cos_to_true_mean": 0.8603697419166565,
+  "recon_cos_to_recovered_mean": 0.7602093815803528,
+  "recon_cos_to_true_mean": 0.8384501338005066,
   "type1_image_asr_fmr1": {
     "threshold": 155,
-    "accepted": 24,
+    "accepted": 22,
     "n": 24,
-    "asr": 1.0
+    "asr": 0.9166666666666666
   },
   "type2_image": {
     "EER": {
       "threshold": 0.7047266960144043,
-      "accepted": 117,
+      "accepted": 103,
       "n": 168,
-      "asr": 0.6964285714285714
+      "asr": 0.6130952380952381
     },
     "FMR 1%": {
       "threshold": 0.8408539295196533,
-      "accepted": 31,
+      "accepted": 27,
       "n": 168,
-      "asr": 0.18452380952380953
+      "asr": 0.16071428571428573
     }
   },
   "baseline": {
@@ -33,5 +33,11 @@
       "genuine_tar": 0.8107142857142857,
       "impostor_accept": 0.009995993589743589
     }
-  }
+  },
+  "dbs_covered": [
+    1,
+    2,
+    3,
+    4
+  ]
 }
