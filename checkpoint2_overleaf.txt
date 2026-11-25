@@ -1,0 +1,378 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{url}
+\usepackage{graphicx}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{cuted}
+\usepackage{capt-of}
+\usepackage{textcomp}
+\usepackage{placeins}
+\usepackage{xcolor}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+\begin{document}
+
+\title{Analyzing the PMA-LSH Pre-Image Attack against Fingerprint Biometric Systems \\
+Progress Report 2}
+
+\author{\IEEEauthorblockN{Deeya Salem}
+\IEEEauthorblockA{\textit{Department of Computer Science} \\
+\textit{Your University} \\
+City, Country \\
+deeyaa.salem@gmail.com}}
+
+\maketitle
+
+\begin{abstract}
+IoM hashing is designed to protect biometric templates from reconstruction attacks; however, Paik et al.\ discovered an attack that recovers a feature vector from an IoM-protected template and reconstructs an image from it. The templates in question were face templates, and the attack was tested on fingerprints only partially. The goal of this project is to finish the fingerprint attack chain: using the biometric template and key to recover a feature vector, then reconstructing a fingerprint image that can be applied to other biometric systems. The system uses DeepPrint, NBIS, GRP-IoM and URP-IoM with the FVC2004 Set~B dataset. Unprotected DeepPrint reaches an EER of 6.25 percent and NBIS 9.03 percent; IoM preserves accuracy, with GRP-IoM at 6.56 percent and URP-IoM at 6.10 percent. Errors concentrate in DB1 and DB2, and IoM inherits DeepPrint's failures. At an operating point of at most 1 percent false match rate, the pre-image attack recovers the feature with purity near 0.835 and reproduces the stored template: the recovered feature re-enters the protected system (feature-level Type-1) at essentially 100 percent and reconstructed GRP images re-enter at 91.7 percent. Impersonating the victim on an independent, unprotected DeepPrint system (Type-2) at the same threshold is much harder: inverting IoM breaks the protected system but is not by itself enough to impersonate the victim elsewhere, because at a strict threshold the recovered feature matches the enrolled template far better than the victim's other impressions. The attack's reach is thus bounded by the operating threshold, not by IoM's non-invertibility.
+\end{abstract}
+
+\begin{IEEEkeywords}
+biometric template protection, cancelable biometrics, fingerprint recognition,
+index-of-max hashing, locality-sensitive hashing, pre-image attack
+\end{IEEEkeywords}
+
+\section{Problem Statement and Motivation}
+Paik et al.~\cite{paik2026} (IEEE Trans.\ Dependable Secure Comput., vol.~23) demonstrated a pre-image attack that reverses Index-of-Max (IoM) protected biometric templates. From a stolen template and key they recover a feature vector and, with a reconstruction model~\cite{mai2019nbnet}, build images that fool other face systems and commercial APIs. This matters because IoM is meant to make stored templates non-invertible, so a way to bypass it leaves every system that relies on IoM vulnerable to this attack. Paik et al.\ focused primarily on faces; for fingerprint templates---the modality IoM was designed for~\cite{jin2018iom}---they stopped at recovering the feature vector and measuring its purity, without reconstructing a sample. The goal of this project is to finish that attack chain for fingerprints---recover the feature, reconstruct an image, and test it on other systems---and to measure how far a feature-level inversion actually carries: whether re-entering the protected IoM system also lets the attacker impersonate the victim on an independent, unprotected matcher. The main finding is that it does not. Inverting IoM succeeds almost completely---the recovered feature re-enters the protected system---but using it to impersonate the victim on an independent, unprotected system collapses at a realistic operating threshold, because the recovered feature reproduces the enrolled template far better than it matches the victim's other impressions. The attack's reach is therefore bounded by the operating point, not by IoM's non-invertibility.
+
+This is an attack project. Since the proposal and Checkpoint~1, three things changed. First, the trained decoder used by Paik et al.\ was replaced with optimization-based feature inversion~\cite{mahendran2015inverting}, because no public decoder exists and training one needs a GPU and a separate fingerprint corpus. Second, image-level evaluation was added---Type-1 on the protected system and Type-2 on unprotected DeepPrint---to carry the fingerprint attack chain past the recovered feature vector, which Paik et al.\ left at purity only. Third, the second research question was redirected: the proposal set out to explain why the solver struggles to converge on URP, but since the attack inverts both schemes almost completely, the sharper question became how far a successful inversion actually transfers. The emphasis therefore moved to the feature-versus-image and Type-1-versus-Type-2 gap, while the URP smart-initialization variant (Section~VII) remains as a secondary probe of the restart cost.
+
+\section{Data Engineering}
+To mimic the original experiment as closely as possible, I use the same public dataset, FVC2004~\cite{maio2004fvc}, an international fingerprint benchmark from 2004 that is dated but still standard.
+
+Within FVC2004 there are four sub-datasets, each with its own parameters: sensor type, image size, finger-by-impression count, and resolution. The finger-by-impression count is the number of distinct fingers times the impressions per finger; it does not change between datasets, but each dataset has two sets: Set~A with $100 \times 8$ and Set~B with $10 \times 8$. Paik et al. use Set~B, which is what I use; across all four Set~B subsets there are 320 images for evaluation. DB1 and DB2 both use optical sensors at 500 dpi, but DB1 has an image size of $640 \times 480$ and DB2 $328 \times 364$. DB3 uses a thermal sweep sensor at 512 dpi, with an image size of $300 \times 480$. DB4 is the only synthetic dataset: instead of a sensor it uses a fingerprint generator, SFinGe v3.0, to produce fingerprints, with an image size of $288 \times 384$ at about 500 dpi. All images are stored in the Tagged Image File Format (TIFF). FVC2004 Set~B was validated by checking counts, formats, duplicates, and more; after validation, there was nothing to clean.
+
+For preprocessing, Paik et al. did not give much detail beyond stating that the extractor takes $299 \times 299$ images, nor did they say how they converted images to that size. Given these limited details, I adopted the DeepPrint implementation's own FVC2004 pipeline~\cite{engelsma2021deepprint, rohwedder2023}. Preprocessing was performed on each part of the pipeline with nothing else touching the data. For DeepPrint, each TIFF was loaded as 8-bit grayscale, padded to a square with white pixels (because the images are rectangular and DeepPrint expects squares), resized to the extractor's $299 \times 299$ input, and Gabor-binarized with a ridge width of 1.8 pixels to produce a clean ridge map. For minutiae matching, TIFFs were converted to 8-bit grayscale PNG because mindtct~\cite{watson2007nbis}, the minutiae detector, cannot read TIFF. Each image was tagged at 500 dpi because the original tag was invalid; running mindtct on DB3 (whose true resolution is 512 dpi) at both 500 and 512 dpi gave identical minutiae, so the uniform tag is harmless.
+
+Validation found no schema anomalies beyond the invalid 1~dpi tag, and no duplicates, blank or corrupted images, or mislabels (95.9\% of images have a same-finger nearest neighbor, and no finger's impressions disagree). It did surface outliers and sensor artifacts: seven impressions (six in DB2, one in DB4) fall more than three standard deviations below their own-finger similarity and were kept as genuine but hard captures; DB2 has a gray background and a central gray square; DB1 prints cover little of the frame (median 27\%, minimum $\approx$10\%). These capture variations are intentional---FVC2004 is designed to be harder than FVC2000/2002~\cite{maio2004fvc}---while the dpi tag and artifacts are not. No train/test split applies: DeepPrint is the only learned model, pretrained by others on SFinGe and MCYT330 (neither overlapping FVC2004), so all 320 images are evaluation data.
+
+\section{System Architecture}
+Fig.~\ref{fig:architecture} shows the complete system-and-attack pipeline: the biometric system that is the target (top) and the pre-image attack mounted against it (bottom), both detailed in the sections that follow.
+\begin{strip}
+  \centering
+  \includegraphics[width=\textwidth]{figures/architecture.pdf}
+  \captionof{figure}{\textbf{System and attack architecture.} Top: the
+  enrolment/verification pipeline (FVC2004 image $\rightarrow$ preprocessing
+  $\rightarrow$ DeepPrint feature $\rightarrow$ IoM template with key
+  $\rightarrow$ stored template and matcher). Bottom: the pre-image attack,
+  entering at the stored template and key under the stolen-token model, running
+  template\,+\,key $\rightarrow$ Newton solver $\rightarrow$ recovered feature
+  $\rightarrow$ reconstructed image $\rightarrow$ image-level Type-1/Type-2.}
+  \label{fig:architecture}
+\end{strip}
+
+\section{Advanced Methodology}
+The project has two segments: the target biometric system and the attack. The target system uses two verification matchers. DeepPrint is the main system under attack, and NBIS is a secondary matcher on which the reconstructed image is tested. There are two reasons to use DeepPrint: it is the system Paik et al. used, and IoM hashing relies on the kind of fixed-length features DeepPrint produces. The primary reason for NBIS is its availability as a standard public tool. The exact DeepPrint model is from Rohwedder et al.~\cite{rohwedder2023}; this is not the original model (Engelsma et al.~\cite{engelsma2021deepprint}), whose authors did not release code or weights. NBIS is available from NIST~\cite{watson2007nbis}. FVC2004 Set~B is used to evaluate both systems; Paik et al. also used FVC2004, and it is a deliberately difficult recognition benchmark~\cite{maio2004fvc}. FVC2004 is a fingerprint database, but this project could be carried out with other biometric databases. After confirming both systems work, IoM is integrated; this project uses IoM-GRP and IoM-URP. IoM requires DeepPrint because it operates on a fixed-length numerical feature vector to perform its ranking transformation, whereas traditional fingerprint templates are unordered, variable-length minutiae sets. The IoM implementation is from Paik et al.'s \texttt{Analysis\_LSH} repository. This yields four evaluated configurations: unprotected DeepPrint, NBIS, and two protected DeepPrint systems (DeepPrint+GRP-IoM and DeepPrint+URP-IoM).
+
+The attack has two components: the pre-image solver (from Paik et al.'s repository) and a reconstructor. The trained decoder Paik et al. used is private. Because no public reconstructor of that kind exists and training one requires resources I did not have, I use optimization-based feature inversion~\cite{mahendran2015inverting} instead. This requires no training data or infrastructure; the tradeoff is that a trained decoder is generally better for realism and for transfer to NBIS. Under the stolen-token threat model, the attacker is assumed to already hold the user's secret key (the token that seeds the random projection or permutation) and the stored biometric template. The pre-image attack takes an IoM template and the user's key as input and outputs a feature vector of the victim. Optimization-based inversion then transforms that feature vector into an image. The reconstructed image is re-extracted by DeepPrint and judged at two levels: Type-1, whether it re-enters the protected IoM system, and Type-2, whether it matches the victim's other impressions on unprotected DeepPrint. Whether such an image also transfers to the minutiae matcher NBIS is left to future work, as the reconstructions are ridge texture rather than realistic prints.
+
+Let $x \in \mathbb{R}^{d}$ ($d=512$) be a DeepPrint feature vector and $f(\cdot)$ the frozen DeepPrint extractor. IoM maps $x$ to a code $c=(c_1,\dots,c_m)$ with the user key. For GRP-IoM, the key is a Gaussian matrix with rows $R_{k,j}$ for block $k=1,\dots,m$ and index $j=1,\dots,q$:
+\begin{equation}
+c_k = \arg\max_{j\in\{1,\dots,q\}} \langle R_{k,j},\, x\rangle .
+\end{equation}
+For URP-IoM, the key is $p$ permutations $\pi_{k,t}$ of $\{1,\dots,d\}$ per block, and $w$ is the window size (the number of leading indices each block ranks over):
+\begin{equation}
+c_k = \arg\max_{j\in\{1,\dots,w\}} \ \prod_{t=1}^{p} x_{\pi_{k,t}(j)} .
+\end{equation}
+A valid pre-image is any $x$ whose winning entry beats the others in every block, i.e.\ the locality-sensitive-property (LSP) constraints $\ell_{k,j}(x)\ge 0$ hold for all $k,j$, with
+\begin{equation}
+\ell_{k,j}(x) =
+\begin{cases}
+\langle R_{k,c_k},x\rangle - \langle R_{k,j},x\rangle & \text{(GRP)},\\[2pt]
+\prod_{t=1}^{p} x_{\pi_{k,t}(c_k)} - \prod_{t=1}^{p} x_{\pi_{k,t}(j)} & \text{(URP)}.
+\end{cases}
+\end{equation}
+The solver minimizes the total constraint violation
+\begin{equation}
+G_{k,j}(x) = \ell_{k,j}(x) - \bigl|\ell_{k,j}(x)\bigr|,
+\quad
+\mathcal{L}(x) = \sum_{k,j} \bigl|G_{k,j}(x)\bigr|,
+\end{equation}
+which is $0$ where a constraint holds and $2\ell_{k,j}(x)<0$ where it is violated, using the update
+\begin{equation}
+x^{(n+1)} = x^{(n)} - \frac{\mathcal{L}(x^{(n)})}{\lVert \nabla\mathcal{L}(x^{(n)})\rVert^{2}+\epsilon}\, \nabla\mathcal{L}(x^{(n)}),
+\end{equation}
+where $\epsilon=10^{-8}$ guards the division, for at most 50 steps with up to 10 restarts, yielding the pre-image $\hat{x}$. Given $\hat{x}$, the reconstructor recovers an image $I=\sigma(z)$ (sigmoid-parameterized pixels) that re-extracts to $\hat{x}$:
+\begin{equation}
+\min_{z}\ 1 - \frac{\langle f(I),\,\hat{x}\rangle}{\lVert f(I)\rVert\,\lVert \hat{x}\rVert} \;+\; \lambda\,\mathrm{TV}(I),
+\end{equation}
+where $\mathrm{TV}(I)=\sum_{u,v}(|I_{u+1,v}-I_{u,v}|+|I_{u,v+1}-I_{u,v}|)$ is a total-variation prior, optimized with Adam. The parameters are listed in Table~\ref{tab:params}.
+
+\begin{table}[!htb]
+\centering
+\caption{Attack and IoM parameters.}
+\label{tab:params}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lll}
+\hline
+Stage & Parameter & Value \\
+\hline
+IoM GRP & $m,q,d$ & 300, 16, 512 \\
+IoM URP & $m,w,p,d$ & 600, 100, 2, 512 \\
+Threat model & attacker holds & template $c$ + key (stolen-token) \\
+Key & from token & seeded PRNG, token 0 \\
+Pre-image solver & max steps / restarts & 50 / 10 \\
+Pre-image solver & loss & $\ell_1$ constraint violation \\
+Reconstruction & optimizer, lr & Adam, 0.05 \\
+Reconstruction & iterations & 200 \\
+Reconstruction & TV weight $\lambda$ & 0.01 \\
+Operating point & FMR $\le 1\%$ threshold & GRP 155/300, URP 198/600 \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Exploratory Data Analysis}
+The data is summarized in Fig.~\ref{fig:eda-combined}, generated by an EDA script in the repository. The top row is univariate image quality by sensor, using NIST Fingerprint Image Quality (NFIQ)~\cite{tabassi2004nfiq}, print area, and minutiae count: DB2 has the fewest good-quality captures (NFIQ~1--2: 64\% vs 80--84\% elsewhere), DB1 prints cover the least of the frame (median 27\% vs 66--78\%), and DB3's thermal sensor yields the most minutiae (median 90 vs 48--56). The bottom row shows the rest: seven impressions fall more than three standard deviations below their own-finger similarity and are kept as hard captures; within a sensor no image statistic predicts matching difficulty well (all $|\rho|\le0.16$); and DeepPrint separates genuine from impostor pairs, overlapping only in the tail. The classes are imbalanced---1{,}120 genuine versus 49{,}920 impostor pairs (45:1), with 77\% of impostors cross-sensor---so I report per-class error rates (FMR, FNMR, EER) rather than accuracy. There is no live-versus-spoof analysis because FVC2004 has no spoof samples.
+
+\input{eda_figures}
+
+\section{Baseline Implementation and Preliminary Results}
+The baseline is unprotected DeepPrint with NBIS as a second matcher; the IoM schemes are the protected systems compared against the baseline and the later attack. DeepPrint is a pretrained CNN, NBIS matches minutiae, and IoM is the hashing scheme that protects the templates.
+
+All four systems were scored on the same pairs from FVC2004 Set~B: 1,120 genuine (same finger) and 49,920 impostor (different fingers). The two error types are false match and false non-match. Table~\ref{tab:s4-counts} gives the EER for each system; IoM preserves accuracy at the EER, as GRP and URP are both within about 0.3 points of unprotected DeepPrint, although at FMR~$\le 1\%$ GRP's false non-match rate is about 1.9 points worse (20.80\% vs 18.93\%).
+
+The attack is judged at the system's acceptance threshold, so I adopt a standard low-false-match operating point, FMR~$\le 1\%$. One percent was chosen because 0.1\% would make DeepPrint reject 59\% of genuine pairs. The exact numbers are in Table~\ref{tab:s4-counts} and Fig.~\ref{fig:s4-threshold}. Table~\ref{tab:s4-errors} shows where DeepPrint and NBIS fail, across six error patterns: misses by sensor, outlier images, image quality, false matches by sensor, differing failures between matchers, and IoM inheriting DeepPrint's errors. DeepPrint misses 109 of 280 genuine pairs in DB2 and 58 in DB1, but only 3 in DB3; NBIS behaves similarly, and my hypothesis is that DB2's image quality and DB1's small print area affect recognition. For outlier images, all 48 genuine pairs containing an outlier fail, likely because the captures are displaced, rotated, or badly pressed. Misses generally rise with worse NFIQ (a pair is binned by the worse NFIQ of its two images), from 7\% at NFIQ~1 to 50\% at NFIQ~5. DeepPrint's false matches mostly originate from the same sensor, while NBIS does not show this; my hypothesis is a domain shift, since DeepPrint was trained on different data (SFinGe and MCYT330) so FVC2004's sensor styles were not learned. The matchers fail differently: only 93 genuine pairs are missed by both, with DeepPrint missing 212 and NBIS 175, likely because they capture different information. IoM inherits DeepPrint's errors: 88\% and 87\% of its misses and 86\% and 81\% of its false matches are pairs DeepPrint also gets wrong, so IoM's accuracy is determined by the feature extractor. The random seeds are in Table~\ref{tab:seeds}, and the code and results are at \url{https://github.com/waterdropletonleaf/biometric-iom-attack}.
+
+\begin{table}[!htb]
+\centering
+\caption{Sources of randomness behind every number in this report.}
+\label{tab:seeds}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{p{2.3cm}p{3cm}p{2.3cm}}
+\hline
+Component & Seed & Used in \\
+\hline
+IoM key (GRP-, URP-IoM) & token 0 (seeded PyTorch generator) & Tables~\ref{tab:s4-counts}--\ref{tab:s4-errors} and \ref{tab:attack-quality}--\ref{tab:urp-fail}, Fig.~\ref{fig:s4-threshold} \\
+Pre-image solver restarts (URP) & seed 0, single-threaded generator & Tables~\ref{tab:attack-quality}, \ref{tab:urp-fail} \\
+Reconstruction init $z$ & seed 0 (PyTorch generator) & Table~\ref{tab:attack-asr} (image rows) \\
+Reconstruction subset (24 of 320) & first 6 per DB; deterministic & Table~\ref{tab:attack-asr} (image rows) \\
+DeepPrint features & none; deterministic\textsuperscript{a} & all sections \\
+NBIS (MINDTCT, Bozorth3), NFIQ & none; deterministic & Sections II--IV, VI \\
+EDA statistics & none; deterministic & Fig.~\ref{fig:eda-combined} \\
+Thresholds, error analysis & none; deterministic & Section~VI \\
+\hline
+\multicolumn{3}{l}{\textsuperscript{a}Re-extracting all 320 feature vectors gave bit-identical results.}
+\end{tabular}
+\end{table}
+
+\input{section4}
+\FloatBarrier
+
+\section{Attack Results}
+Table~\ref{tab:attack-quality} reports the pre-image attack. The attack succeeds against both GRP- and URP-IoM and reproduces the stored template. The URP convergence issue is present but mild, requiring 2.62 restarts on average. The ``URP (smart init)'' row seeds the solver at the coordinates the key ranks as winners, instead of a random start, and falls back to random restarts if that start stalls; it did not help, taking more restarts (3.62 on average) and never succeeding on the first try. Purity sits far above a stranger's: 0.835, against a baseline genuine mean of 0.888 and an impostor mean of 0.367.
+
+Table~\ref{tab:attack-asr} shows attack success. Type-1 success on the protected system is near 100\%, meaning the attack breaks IoM. Type-2 success on the unprotected matcher is threshold-dependent, reaching 78.7\% at the EER point but near zero at FMR~$\le$1\%. This follows from the recovered feature's mean cosine to the victim's \emph{other} impressions, 0.740, which sits above the EER threshold (0.705) but below the FMR~$\le$1\% threshold (0.841). Thus inverting IoM breaks the protected system but is not by itself enough to impersonate the victim elsewhere: the attack re-enters the protected system almost perfectly (Type-1), yet at the strict threshold the recovered feature---tuned to the enrolled template---no longer matches the victim's other impressions well enough to pass (Type-2). The attack's reach is bounded by the operating threshold, not by IoM's non-invertibility; transfer to a minutiae matcher such as NBIS is a further, still-open gap.
+
+Table~\ref{tab:urp-fail} shows the error analysis. On five URP templates the solver fails to \emph{invert}: it reaches the maximum number of restarts and returns a feature almost orthogonal to the true one (purity $\approx 0$). This is an inversion failure, not an authentication failure: three of the five still satisfy enough block constraints to clear the Type-1 threshold (scores 273, 276, and 267 of 600, above 198), so only the two scoring below 198 (12 and 61) fail Type-1, which is why URP Type-1 is 318/320. GRP succeeds on all five, which suggests the cause is URP's non-convex product constraints rather than the fingerprint. The image-level Type-1 misses correspond to the lowest-fidelity reconstructions.
+
+Image-level results are GRP only (24 reconstructions, limited by CPU time); since the reconstructions are ridge texture rather than realistic prints, training a generative decoder and verifying transfer to NBIS are left to future work.
+
+\begin{table}[!htb]
+\centering
+\caption{Pre-image attack over all 320 templates (shared key~0). Purity is the cosine of the recovered feature to the true feature; score is out of $m$. The restart budget is 10 (Paik's setting); the counter is attempts${}-1$ and includes one final fallback pass, so its maximum reads 11.}
+\label{tab:attack-quality}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lccccc}
+\hline
+Variant & Purity & Score & Restarts & First-try & Time (s) \\
+\hline
+GRP-IoM & $0.835\pm0.008$ & 299.7/300 & 0.00 / 0 & 100\% & 0.010 \\
+URP-IoM & $0.816\pm0.101$ & 590.9/600 & 2.62 / 11 & 25\% & 1.50 \\
+URP (smart init) & $0.814\pm0.109$ & 591.6/600 & 3.62 / 11 & 0\% & 2.12 \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[!htb]
+\centering
+\caption{Attack success rate (ASR) with counts, at the EER and FMR\,$\le$\,1\% points, versus baseline accept rates. Type-1: re-enters the protected system. Type-2: impersonates the victim's other impressions on unprotected DeepPrint. Image-level results are GRP, 24 reconstructions across all four DBs.}
+\label{tab:attack-asr}
+\footnotesize
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{llcc}
+\hline
+Attack & Level & ASR @EER & ASR @FMR\,$\le$1\% \\
+\hline
+GRP Type-1 & feature & 100\% (320/320) & 100\% (320/320) \\
+URP Type-1 & feature & 99.4\% (318/320) & 99.4\% (318/320) \\
+GRP Type-2 & feature & 78.7\% (1763/2240) & 0.0\% (0/2240) \\
+URP Type-2 & feature & 76.7\% (1718/2240) & 0.3\% (6/2240) \\
+GRP Type-1 & image & -- & 91.7\% (22/24) \\
+GRP Type-2 & image & 61.3\% (103/168) & 16.1\% (27/168) \\
+\hline
+Baseline genuine (TAR) & -- & 93.8\% & 81.1\% \\
+Baseline impostor (FMR) & -- & 6.2\% & 1.0\% \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[!htb]
+\centering
+\caption{The five URP templates where inversion fails (purity $<0.5$). All reach the maximum restarts, yet three still clear the Type-1 threshold of 198 on matching score; none recovers the true feature, while GRP succeeds on all five.}
+\label{tab:urp-fail}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lcccc}
+\hline
+Template & URP pur. & Score/600 & Restarts & GRP pur. \\
+\hline
+db1\_108\_1 & 0.005 & 12 & 11 & 0.833 \\
+db2\_102\_7 & 0.040 & 273 & 11 & 0.829 \\
+db3\_110\_4 & 0.002 & 276 & 11 & 0.820 \\
+db4\_101\_4 & 0.035 & 267 & 11 & 0.825 \\
+db4\_110\_5 & 0.136 & 61 & 11 & 0.831 \\
+\hline
+\end{tabular}
+\end{table}
+
+\FloatBarrier
+\section{Comprehensive Related Work}
+\label{sec:related}
+
+This work groups prior work into three threads: attacks on IoM hashing
+specifically, pre-image attacks on cancelable biometrics in general,
+and template-inversion attacks on unprotected deep templates.
+Table~\ref{tab:related} summarizes the comparison.
+
+\begin{strip}
+\centering
+\captionof{table}{Comparison of related work with this project.}
+\label{tab:related}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\newcolumntype{R}[1]{>{\raggedright\arraybackslash\hsize=#1\hsize}X}
+\begin{tabularx}{\textwidth}{@{} R{0.6} R{0.75} R{1.05} R{0.7} R{1.0} R{1.9} @{}}
+\toprule
+\textbf{Work} & \textbf{Target} & \textbf{Data / features} &
+\textbf{Attacker knows} & \textbf{Method} & \textbf{Metric and main result} \\
+\midrule
+Jin et al.~\cite{jin2018iom} & GRP-, URP-IoM (proposed) &
+FVC2002/2004 DB1--3; 299-d MCC + kernel &
+n/a (scheme paper) & Ranking-based LSH &
+Stolen-token EER on FVC2004: GRP 3.99--4.74\%, URP 4.51--8.46\%; claimed non-invertible \\
+Atighehchi et al.~\cite{atighehchi2020} & GRP-, URP-IoM & FVC2002 DB1; 299-d MCC &
+Token, template, transform & LP / geometric / QP (CVXOPT) &
+Auth.\ $\approx$100\% both; link.\ 97\% / 83\%; nearby inversion of
+GRP only, none for URP \\
+Dong et al.~\cite{dong2019} & BioHashing, Bloom filter &
+LFW subset (ArcFace); CASIA-Iris-Interval &
+Token, template, transform & Genetic-algorithm search &
+FAR@EER thr.\ up to 85.54\% (BioHash, 500 b); 74.21\% (Bloom, 3 templ.) \\
+Durbet et al.~\cite{durbet2022} & Binary templates (generic) & Analytical (no dataset) &
+Accept/reject only & Probabilistic near-collision analysis &
+Expected trials to a false accept fall as DB size grows / threshold loosens (analytical bound) \\
+Mai et al.~\cite{mai2019nbnet} & Unprotected deep face templates &
+VGG-Face, Multi-PIE (train); LFW, FERET (test) &
+Template only & Learned inverse (NbNet) &
+TAR 95.20\% / 58.05\% (Type-1/2) @ FAR 0.1\%, LFW \\
+Wijewardena et al.~\cite{wijewardena2023} & Minutiae vs.\ deep fingerprint templates &
+NIST SD4 & Template only & Learned inverse &
+Minutiae TAR $\approx$100\%; deep $<$1\% (commercial), 85.95\% (same network) \\
+\midrule
+\textbf{This project} & GRP-, URP-IoM & FVC2004 (40 fingers $\times$ 8); 512-d DeepPrint &
+Token, template, transform & Newton-type pre-image attack (Paik et al.~\cite{paik2026}) &
+ASR at IoM threshold: feature Type-1 $\approx$100\%, Type-2 up to 78.7\%@EER; image Type-1 91.7\% (GRP) \\
+\bottomrule
+\end{tabularx}
+\end{strip}
+
+\subsection{IoM Hashing and Attacks on It}
+
+\textbf{Jin et al.}~\cite{jin2018iom} introduced IoM hashing, the
+scheme attacked here: a ranking-based LSH transform that, under a user
+key, maps a real feature vector to a code of argmax indices, in the
+GRP (Gaussian projection) and URP (permutation product) variants this
+project targets; codes are matched by counting colliding indices. On
+FVC2004 Set~A, stolen-token EERs were 3.99--4.74\% (GRP) and
+4.51--8.46\% (URP), and they argued the discrete codes make IoM
+non-invertible---the claim this project tests. Our setup differs in
+features (512-d DeepPrint, not MCC) and data (the 40-finger Set~B), so
+the EERs are not directly comparable.
+
+\textbf{Atighehchi et al.}~\cite{atighehchi2020} cryptanalyzed both
+variants under the same stolen-token model, casting each attack as a
+convex program (a linear program for GRP, a geometric program for URP)
+solved with CVXOPT. Their false-accept attacks succeed essentially
+100\% of the time and their linkability attacks reach 97\%/83\%
+(GRP/URP); for \emph{reversibility} they recover nearby GRP pre-images
+but found no URP inversion better than exhaustive search. This is the
+closest prior work; this project instead reproduces the Newton-type
+attack of Paik et al.~\cite{paik2026}, which inverts both variants
+(including the URP case left open), on DeepPrint features and FVC2004.
+
+\subsection{Pre-Image Attacks on Cancelable Biometrics}
+
+\textbf{Dong et al.}~\cite{dong2019} proposed GASAF, a black-box
+genetic search for a pre-image whose transformed form scores as a
+stolen template, assuming only knowledge of the transform. It reaches
+up to 85.54\% false-accept on BioHashing (ArcFace/LFW) and 74.21\% on
+Bloom-filter IrisCodes, but was not evaluated on IoM. Unlike GASAF's
+scheme-agnostic but slow search (tens of seconds to minutes per
+template), the attack reproduced here is white-box on IoM's argmax
+structure and solves directly.
+
+\textbf{Durbet et al.}~\cite{durbet2022} analyze \emph{untargeted}
+attacks on binary templates, where an adversary sees only
+accept/reject and impersonates any enrolled user; their probabilistic
+near-collision model relates template length, database size, and
+threshold to the expected number of trials (an analytical bound, no
+experiments). Their attack needs no stolen token, whereas this
+project's needs both token and template but recovers a specific user's
+feature.
+
+\subsection{Inversion of Unprotected Deep Templates}
+
+\textbf{Mai et al.}~\cite{mai2019nbnet} reconstruct face images from
+\emph{unprotected} deep templates with a learned network (NbNet),
+reaching 95.20\%/58.05\% Type-1/Type-2 TAR at FAR~0.1\% on LFW. This
+project instead inverts an IoM-protected template by optimization, but
+adopts their Type-1/Type-2 protocol.
+
+\textbf{Wijewardena et al.}~\cite{wijewardena2023} compare the
+invertibility of minutiae and deep fingerprint templates on NIST~SD4:
+images reconstructed from deep templates reach 85.95\%/68.10\%
+Type-1/Type-2 when re-matched by the same network, but fall below 1\%
+on a black-box commercial matcher. Since DeepPrint is exactly such a
+deep template, this predicts the behaviour expected here---strong
+success in the DeepPrint/IoM feature space, with much harder transfer
+to a minutiae-based matcher like NBIS left as future work---so this
+project reports protected-domain success first and image-level success
+as secondary.
+
+\begin{thebibliography}{00}
+\bibitem{paik2026} S. Paik, C. Hwang, S. Kim, and J. H. Seo, ``On the reversibility of locality-sensitive hashing-based biometric template protections,'' IEEE Trans. Dependable Secure Comput., vol. 23, no. 2, pp. 3477--3493, Mar./Apr. 2026, doi: 10.1109/TDSC.2025.3637307.
+
+\bibitem{jin2018iom} Z. Jin, J. Y. Hwang, Y.-L. Lai, S. Kim, and A. B. J. Teoh, ``Ranking-based locality sensitive hashing-enabled cancelable biometrics: Index-of-max hashing,'' IEEE Trans. Inf. Forensics Security, vol. 13, no. 2, pp. 393--407, Feb. 2018.
+
+\bibitem{mai2019nbnet} G. Mai, K. Cao, P. C. Yuen, and A. K. Jain, ``On the reconstruction of face images from deep face templates,'' IEEE Trans. Pattern Anal. Mach. Intell., vol. 41, no. 5, pp. 1188--1202, May 2019.
+
+\bibitem{maio2004fvc} D. Maio, D. Maltoni, R. Cappelli, J. L. Wayman, and A. K. Jain, ``FVC2004: Third fingerprint verification competition,'' in Proc. Int. Conf. Biometric Authentication, Springer, 2004, pp. 1--7.
+
+\bibitem{engelsma2021deepprint} J. J. Engelsma, K. Cao, and A. K. Jain, ``Learning a fixed-length fingerprint representation,'' IEEE Trans. Pattern Anal. Mach. Intell., vol. 43, no. 6, pp. 1981--1997, Jun. 2021.
+
+\bibitem{rohwedder2023} T. Rohwedder, D. Osorio-Roig, C. Rathgeb, and C. Busch, ``Benchmarking fixed-length fingerprint representations across different embedding sizes and sensor types,'' in Proc. Int. Conf. Biometrics Special Interest Group (BIOSIG), 2023, pp. 1--6.
+
+\bibitem{watson2007nbis} C. I. Watson, M. D. Garris, E. Tabassi, C. L. Wilson, R. M. McCabe, S. Janet, and K. Ko, ``User's guide to NIST biometric image software (NBIS),'' Nat. Inst. Standards Technol., Gaithersburg, MD, USA, NISTIR 7392, 2007, doi: 10.6028/NIST.IR.7392.
+
+\bibitem{tabassi2004nfiq} E. Tabassi, C. L. Wilson, and C. I. Watson, ``Fingerprint image quality,'' Nat. Inst. Standards Technol., Gaithersburg, MD, USA, NISTIR 7151, Aug. 2004.
+
+\bibitem{mahendran2015inverting} A. Mahendran and A. Vedaldi, ``Understanding deep image representations by inverting them,'' in Proc. IEEE Conf. Comput. Vis. Pattern Recognit. (CVPR), 2015, pp. 5188--5196.
+
+\bibitem{atighehchi2020} K. Atighehchi, L. Ghammam, K. Karabina, and P. Lacharme, ``A cryptanalysis of two cancelable biometric schemes based on index-of-max hashing,'' IEEE Trans. Inf. Forensics Security, vol. 15, pp. 2869--2880, 2020, doi: 10.1109/TIFS.2020.2977533.
+
+\bibitem{dong2019} X. Dong, Z. Jin, and A. B. J. Teoh, ``A genetic algorithm enabled similarity-based attack on cancellable biometrics,'' in Proc. IEEE Int. Conf. Biometrics Theory, Appl. Syst. (BTAS), 2019, pp. 1--8.
+
+\bibitem{wijewardena2023} K. P. Wijewardena, S. A. Grosz, K. Cao, and A. K. Jain, ``Fingerprint template invertibility: Minutiae vs. deep templates,'' IEEE Trans. Inf. Forensics Security, vol. 18, pp. 744--757, 2023.
+
+\bibitem{durbet2022} A. Durbet, P.-M. Grollemund, P. Lafourcade, and K. Thiry-Atighehchi, ``Near-collisions and their impact on biometric security,'' in Proc. 19th Int. Conf. Security and Cryptography (SECRYPT), 2022, pp. 382--389.
+\end{thebibliography}
+
+\end{document}

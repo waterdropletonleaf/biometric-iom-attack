@@ -85,9 +85,9 @@ def main():
     box(ax, 8.55, ya, 3.0, h, "Recovered feature",
         "512-d pre-image\npurity ≈ 0.835\n(cos to true feat.)", ATK, ATK_FILL)
     box(ax, 4.6, ya, 3.6, h, "Reconstruction",
-        "feature inversion →\nimage; re-extract →\ncos 0.86 to true feat.\n(optimisation-based)", ATK, ATK_FILL)
+        "feature inversion →\nimage; re-extract →\ncos 0.84 to true feat.\n(optimisation-based)", ATK, ATK_FILL)
     box(ax, 0.15, ya, 4.1, h, "Image-level attack success",
-        "Type-1 (same sys) 100%\nType-2 (unprot.) 19–70%\nfuture: generative decoder\n(realistic img, transfer)", ATK, ATK_FILL)
+        "Type-1 (same sys) 92%\nType-2 (unprot.) 16–61%\nfuture: generative decoder\n(realistic img, transfer)", ATK, ATK_FILL)
 
     arrow(ax, xs[4], ya + h / 2, 11.55, ya + h / 2, ATK)        # solver -> recovered
     arrow(ax, 8.55, ya + h / 2, 8.20, ya + h / 2, ATK)          # recovered -> reconstruction
